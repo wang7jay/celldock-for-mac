@@ -23,6 +23,14 @@ struct DiscoveredModemDevice: Equatable, Identifiable {
         String(format: "%04X:%04X", vendorID, productID)
     }
 
+    var displayName: String {
+        switch usbIdentity.uppercased() {
+        case "2C7C:0125": return "QDC507"
+        case "2CA3:4006": return L10n.tr("大疆 4G 模组")
+        default: return L10n.tr("蜂窝模组")
+        }
+    }
+
     var locationDescription: String {
         String(format: "0x%08X", locationID)
     }

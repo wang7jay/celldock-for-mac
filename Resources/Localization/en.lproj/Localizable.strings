@@ -1616,6 +1616,7 @@
 "CellDock 将确认完整 USBCFG 并把 usbnet 切换为 1。写入回读成功后模块会重启一次。" = "CellDock will confirm the full USBCFG, switch usbnet to 1, verify the values, then restart the module once.";
 "已识别 Quectel 模块，需要启用完整 USB 功能和 macOS 所需的 CDC‑ECM。" = "A Quectel module was detected. Full USB functions and the CDC-ECM mode required by macOS must be enabled.";
 "已识别模块，但 macOS 联网所需的 CDC‑ECM 尚未开启。" = "The module was detected, but CDC-ECM required by macOS is not enabled.";
+
 "内置声音" = "Built-in Sounds";
 "选择音频文件…" = "Choose Audio File…";
 "经典提示音（默认）" = "Classic Alert (Default)";

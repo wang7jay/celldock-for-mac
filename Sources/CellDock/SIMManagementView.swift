@@ -31,6 +31,8 @@ struct SIMManagementView: View {
     @State private var handledModuleRequestSerial = 0
     @State private var selection: Pane = .overview
     @State private var copiedField: String?
+    @State private var phoneNumberOverrideDraft = ""
+    @State private var phoneNumberOverrideNotice: String?
     @State private var pendingIncomingCallsEnabled: Bool?
     @State private var showingAddESIM = false
     @State private var renamingProfile: ESIMProfile?
@@ -51,6 +53,8 @@ struct SIMManagementView: View {
             if !applyRequestedModuleSelection() {
                 reconcileModuleSelection()
             }
+            migratePhoneNumberOverrideToICCID(for: selectedModem)
+            loadPhoneNumberOverrideDraft()
             appState.refresh()
             handleFocusFirstItemRequest()
         }
@@ -64,6 +68,10 @@ struct SIMManagementView: View {
             if !applyRequestedModuleSelection() {
                 reconcileModuleSelection()
             }
+        }
+        .onChange(of: selectedModem.simICCID) { _, _ in
+            migratePhoneNumberOverrideToICCID(for: selectedModem)
+            loadPhoneNumberOverrideDraft()
         }
         .onChange(of: selectedEUICC.cardKind) { _, cardKind in
             if cardKind != .eUICC, selection == .esim { selection = .sim }
@@ -367,7 +375,7 @@ struct SIMManagementView: View {
             .foregroundStyle(mode.isEnabled ? Color.accentColor : Color.secondary)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(verbatim: "\(module.displayName) · \(module.carrierName)")
+                Text(verbatim: module.selectorTitle)
                     .font(.callout.weight(.semibold))
                     .lineLimit(1)
                 if let issue = appState.networkStatus(for: module.id).issue, issue.isWarning {
@@ -425,7 +433,7 @@ struct SIMManagementView: View {
     private var moduleDetailHeader: some View {
         HStack(alignment: .center, spacing: 14) {
             VStack(alignment: .leading, spacing: 5) {
-                Text(L10n.tr("%@ · %@", selectedModule?.displayName ?? L10n.tr("模组"), selectedModule?.carrierName ?? L10n.tr("运营商未识别")))
+                Text(selectedModule?.selectorTitle ?? L10n.tr("运营商未识别"))
                     .font(.title2.weight(.bold))
                     .lineLimit(1)
 
@@ -1406,7 +1414,7 @@ struct SIMManagementView: View {
 
     private var basicInformationCard: some View {
         VStack(spacing: 0) {
-            informationRow(title: "电话号码", value: displayedPhoneNumber)
+            phoneNumberOverrideRow
             Divider()
             informationRow(title: "运营商", value: selectedModem.operatorName ?? L10n.tr("尚未读取"))
             Divider()
@@ -1415,6 +1423,111 @@ struct SIMManagementView: View {
             informationRow(title: "网络类型", value: selectedModem.accessTechnology ?? L10n.tr("尚未读取"))
         }
         .adaptiveGlassCard()
+    }
+
+    private var phoneNumberOverrideRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 16) {
+                Text(L10n.tr("电话号码"))
+                    .foregroundStyle(.primary)
+                Spacer(minLength: 12)
+                Text(displayedPhoneNumber)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.trailing)
+                    .textSelection(.enabled)
+            }
+
+            HStack(spacing: 8) {
+                TextField(L10n.tr("手动填写本机号码"), text: $phoneNumberOverrideDraft)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(maxWidth: 240)
+                    .disabled(selectedModem.simICCID == nil || appState.isPresentationPrivacyEnabled)
+
+                Button(L10n.tr("保存")) {
+                    savePhoneNumberOverride()
+                }
+                .disabled(selectedModem.simICCID == nil || appState.isPresentationPrivacyEnabled)
+
+                if storedPhoneNumberOverride != nil {
+                    Button(L10n.tr("清除"), role: .destructive) {
+                        clearPhoneNumberOverride()
+                    }
+                    .disabled(appState.isPresentationPrivacyEnabled)
+                }
+
+                if let phoneNumberOverrideNotice {
+                    Text(phoneNumberOverrideNotice)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .font(.callout)
+        }
+        .font(.callout)
+        .padding(.vertical, 9)
+    }
+
+    private let phoneNumberOverridesDefaultsKey = "SIMPhoneNumberOverrides.v1"
+
+    private var storedPhoneNumberOverride: String? {
+        let keys = phoneNumberOverrideKeys(for: selectedModem)
+        let values = UserDefaults.standard.dictionary(forKey: phoneNumberOverridesDefaultsKey) as? [String: String]
+        return keys.lazy.compactMap { values?[$0] }.first
+    }
+
+
+    private func phoneNumberOverrideKeys(for modem: ModemSnapshot) -> [String] {
+        var keys: [String] = []
+        if let iccid = modem.simICCID, !iccid.isEmpty { keys.append(iccid) }
+        if let locationID = modem.usbLocationID { keys.append("usb-location:\(String(format: "%08x", locationID))") }
+        if let registryID = modem.usbRegistryID { keys.append("registry:\(registryID)") }
+        return keys
+    }
+
+    private func migratePhoneNumberOverrideToICCID(for modem: ModemSnapshot) {
+        guard let iccid = modem.simICCID, !iccid.isEmpty else { return }
+        var values = UserDefaults.standard.dictionary(forKey: phoneNumberOverridesDefaultsKey) as? [String: String] ?? [:]
+        let fallbackKeys = phoneNumberOverrideKeys(for: modem).filter { $0 != iccid }
+        if values[iccid] == nil,
+           let fallbackValue = fallbackKeys.lazy.compactMap({ values[$0] }).first {
+            values[iccid] = fallbackValue
+        }
+        for key in fallbackKeys { values.removeValue(forKey: key) }
+        UserDefaults.standard.set(values, forKey: phoneNumberOverridesDefaultsKey)
+    }
+
+    private func loadPhoneNumberOverrideDraft() {
+        phoneNumberOverrideDraft = storedPhoneNumberOverride ?? ""
+        phoneNumberOverrideNotice = nil
+    }
+
+    private func savePhoneNumberOverride() {
+        guard let iccid = selectedModem.simICCID, !iccid.isEmpty else {
+            phoneNumberOverrideNotice = L10n.tr("读取到 SIM 标识后才能保存")
+            return
+        }
+        let number = phoneNumberOverrideDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        let digits = number.filter { $0.isNumber }
+        guard digits.count >= 7 else {
+            phoneNumberOverrideNotice = L10n.tr("请输入有效的电话号码")
+            return
+        }
+        var values = UserDefaults.standard.dictionary(forKey: phoneNumberOverridesDefaultsKey) as? [String: String] ?? [:]
+        values[iccid] = number
+        for key in phoneNumberOverrideKeys(for: selectedModem) where key != iccid {
+            values.removeValue(forKey: key)
+        }
+        UserDefaults.standard.set(values, forKey: phoneNumberOverridesDefaultsKey)
+        phoneNumberOverrideDraft = number
+        phoneNumberOverrideNotice = L10n.tr("已按当前 SIM 保存")
+    }
+
+    private func clearPhoneNumberOverride() {
+        var values = UserDefaults.standard.dictionary(forKey: phoneNumberOverridesDefaultsKey) as? [String: String] ?? [:]
+        for key in phoneNumberOverrideKeys(for: selectedModem) { values.removeValue(forKey: key) }
+        UserDefaults.standard.set(values, forKey: phoneNumberOverridesDefaultsKey)
+        phoneNumberOverrideDraft = ""
+        phoneNumberOverrideNotice = L10n.tr("已清除手动号码")
     }
 
     private var identifierCard: some View {
@@ -1567,7 +1680,8 @@ struct SIMManagementView: View {
     }
 
     private var displayedPhoneNumber: String {
-        guard let number = selectedModem.simPhoneNumber else {
+        let number = storedPhoneNumberOverride ?? selectedModem.simPhoneNumber
+        guard let number else {
             return selectedModem.simReady ? L10n.tr("SIM 未提供本机号码") : L10n.tr("尚未读取")
         }
         if appState.isPresentationPrivacyEnabled {
@@ -1884,9 +1998,7 @@ private struct SIMModuleSidebarRow: View {
     }
 
     private var moduleTitle: String {
-        [module.localizedDisplayName, module.carrierName, module.technologyName]
-            .compactMap { $0 }
-            .joined(separator: " · ")
+        module.selectorTitle
     }
 
     private var hasRoleTags: Bool {

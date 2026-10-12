@@ -290,7 +290,7 @@ struct CommunicationModuleStatusMenu: View {
                 .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("\(module.displayName) · \(module.carrierName)")
+                    Text(verbatim: module.selectorTitle)
                         .font(.callout.weight(.semibold))
                         .lineLimit(1)
 

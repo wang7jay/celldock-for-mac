@@ -571,7 +571,7 @@ final class MenuBarPanelController: NSObject, NSWindowDelegate {
         guard let placement = panelPlacement(for: requestedSize) else { return }
         panel.setFrame(
             NSRect(
-                x: placement.anchorX - placement.size.width / 2,
+                x: placement.originX,
                 y: placement.topY - placement.size.height,
                 width: placement.size.width,
                 height: placement.size.height
@@ -586,9 +586,15 @@ final class MenuBarPanelController: NSObject, NSWindowDelegate {
         panel.lastContentSize = targetSize
         if panel.isVisible {
             var frame = panel.frame
-            frame.origin.x += (frame.width - targetSize.width) / 2
+            frame.origin.x += frame.width - targetSize.width
             frame.origin.y += frame.height - targetSize.height
             frame.size = targetSize
+            if let screen = panelPlacement(for: targetSize)?.visibleFrame {
+                frame.origin.x = min(
+                    max(frame.origin.x, screen.minX + 8),
+                    screen.maxX - targetSize.width - 8
+                )
+            }
             panel.setFrame(frame, display: false)
         }
         panel.applyContentSize(targetSize)
@@ -634,7 +640,10 @@ final class MenuBarPanelController: NSObject, NSWindowDelegate {
             height: min(max(requestedSize.height, 1), maximumHeight)
         )
         return MenuBarPanelPlacement(
-            anchorX: buttonFrame.midX,
+            originX: min(
+                max(buttonFrame.maxX - 4 - size.width, visibleFrame.minX + 8),
+                visibleFrame.maxX - size.width - 8
+            ),
             topY: topY,
             visibleFrame: visibleFrame,
             size: size
@@ -666,7 +675,7 @@ final class MenuBarPanelController: NSObject, NSWindowDelegate {
 }
 
 private struct MenuBarPanelPlacement {
-    let anchorX: CGFloat
+    let originX: CGFloat
     let topY: CGFloat
     let visibleFrame: NSRect
     let size: NSSize

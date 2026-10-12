@@ -497,6 +497,7 @@ struct CellDockSettingsView: View {
         VStack(spacing: 16) {
             moduleStatusStrip
 
+
             settingsSection(title: L10n.tr("通话录音")) {
                 settingRow(
                     title: L10n.tr("通话时自动录音"),

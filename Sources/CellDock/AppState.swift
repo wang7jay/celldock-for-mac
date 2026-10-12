@@ -328,7 +328,13 @@ final class AppState: ObservableObject {
             return [
                 CellularModuleSummary(
                     id: id,
-                    displayName: L10n.tr("模组 %lld", Int64(1)),
+                    displayName: modem.usbIdentity.flatMap { identity in
+                        switch identity.uppercased() {
+                        case "2C7C:0125": return "QDC507"
+                        case "2CA3:4006": return L10n.tr("大疆 4G 模组")
+                        default: return nil
+                        }
+                    } ?? L10n.tr("蜂窝模组"),
                     modem: modem,
                     network: network,
                     cardKind: euicc.cardKind,
@@ -338,7 +344,7 @@ final class AppState: ObservableObject {
             ]
         }
 
-        return discoveredModemDevices.enumerated().map { index, device in
+        return discoveredModemDevices.map { device in
             let isActive = device.locationID == activeModemLocationID
             let moduleSnapshot = isActive ? modem : (
                 auxiliaryModemSnapshots[device.locationID] ?? ModemSnapshot(
@@ -359,7 +365,7 @@ final class AppState: ObservableObject {
                 : (auxiliaryEUICCSnapshots[device.locationID]?.cardKind ?? .unknown)
             return CellularModuleSummary(
                 id: device.moduleID,
-                displayName: L10n.tr("模组 %lld", Int64(index + 1)),
+                displayName: device.displayName,
                 modem: moduleSnapshot,
                 network: networkStatus(for: device.moduleID),
                 cardKind: cardKind,

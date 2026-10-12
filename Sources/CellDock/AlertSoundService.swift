@@ -67,13 +67,6 @@ enum AlertSoundKind: String, CaseIterable, Identifiable {
         case .incomingCall:
             return [
                 BundledAlertSound(
-                    id: "classic",
-                    displayNameKey: "经典铃声",
-                    duration: 42.318,
-                    resourceName: "ring",
-                    resourceExtension: "mp3"
-                ),
-                BundledAlertSound(
                     id: "ringtone-023",
                     displayNameKey: "晨曦",
                     duration: 6.922,

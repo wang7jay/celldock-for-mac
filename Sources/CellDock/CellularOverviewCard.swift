@@ -109,6 +109,10 @@ struct CellularOverviewCard: View {
             padding: cardPadding,
             treatment: treatment
         )
+        .onAppear { migratePhoneNumberOverrideToICCID() }
+        .onChange(of: displayedModem.simICCID) { _, _ in
+            migratePhoneNumberOverrideToICCID()
+        }
     }
 
     private var summaryPanel: some View {
@@ -188,7 +192,7 @@ struct CellularOverviewCard: View {
     @ViewBuilder
     private var cardTitleView: some View {
         if let displayedModule {
-            Text("\(displayedModule.displayName) · \(operatorName)")
+            Text(verbatim: displayedModule.selectorTitle)
                 .font(.headline)
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
@@ -520,7 +524,10 @@ struct CellularOverviewCard: View {
         case .ready:
             break
         }
-        if let number = displayedModem.simPhoneNumber {
+        let overrides = UserDefaults.standard.dictionary(forKey: "SIMPhoneNumberOverrides.v1") as? [String: String]
+        let overrideKeys = phoneNumberOverrideKeys
+        let number = overrideKeys.lazy.compactMap { overrides?[$0] }.first ?? displayedModem.simPhoneNumber
+        if let number {
             if appState.isPresentationPrivacyEnabled {
                 return L10n.tr("本机号码已隐藏")
             }
@@ -533,6 +540,27 @@ struct CellularOverviewCard: View {
             return L10n.tr("未提供手机号 · ICCID 尾号 %@", String(iccid.suffix(4)))
         }
         return L10n.tr("SIM 未提供本机号码")
+    }
+
+    private var phoneNumberOverrideKeys: [String] {
+        var keys: [String] = []
+        if let iccid = displayedModem.simICCID, !iccid.isEmpty { keys.append(iccid) }
+        if let locationID = displayedModem.usbLocationID { keys.append("usb-location:\(String(format: "%08x", locationID))") }
+        if let registryID = displayedModem.usbRegistryID { keys.append("registry:\(registryID)") }
+        return keys
+    }
+
+    private func migratePhoneNumberOverrideToICCID() {
+        guard let iccid = displayedModem.simICCID, !iccid.isEmpty else { return }
+        let key = "SIMPhoneNumberOverrides.v1"
+        var values = UserDefaults.standard.dictionary(forKey: key) as? [String: String] ?? [:]
+        let fallbackKeys = phoneNumberOverrideKeys.filter { $0 != iccid }
+        if values[iccid] == nil,
+           let fallbackValue = fallbackKeys.lazy.compactMap({ values[$0] }).first {
+            values[iccid] = fallbackValue
+        }
+        for fallbackKey in fallbackKeys { values.removeValue(forKey: fallbackKey) }
+        UserDefaults.standard.set(values, forKey: key)
     }
 
     private var simStateIcon: String {

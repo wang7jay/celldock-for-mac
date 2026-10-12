@@ -43,7 +43,7 @@ struct CellularModuleSummary: Identifiable, Equatable {
     }
 
     var selectorTitle: String {
-        [localizedDisplayName, modem.simReady ? carrierName : nil, technologyName]
+        [modem.simReady ? carrierName : nil, technologyName]
             .compactMap { $0 }
             .joined(separator: " · ")
     }
