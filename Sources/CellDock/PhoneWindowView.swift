@@ -290,7 +290,7 @@ struct CommunicationModuleStatusMenu: View {
                 .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("\(module.displayName) · \(module.carrierName)")
+                    Text("\(module.carrierName)")
                         .font(.callout.weight(.semibold))
                         .lineLimit(1)
 
@@ -354,7 +354,7 @@ struct CommunicationModuleStatusMenu: View {
         if let signal = module.modem.signalDBm { parts.append("\(signal) dBm") }
         if let suffix = module.simSuffix { parts.append(L10n.tr("尾号 %@", suffix)) }
         if parts.isEmpty { parts.append(module.statusText) }
-        return parts.joined(separator: " · ")
+        return parts.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.joined(separator: " · ")
     }
 }
 
@@ -899,7 +899,7 @@ private struct ActiveCallView: View {
         } else if appState.call.voiceOverUSBSupported {
             parts.append(L10n.tr("使用 Mac 接听"))
         }
-        return parts.isEmpty ? L10n.tr("蜂窝语音通话") : parts.joined(separator: " · ")
+        return parts.isEmpty ? L10n.tr("蜂窝语音通话") : parts.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.joined(separator: " · ")
     }
 
     private var callTint: Color {

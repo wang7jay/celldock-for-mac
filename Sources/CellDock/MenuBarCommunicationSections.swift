@@ -327,7 +327,7 @@ struct MenuBarCommunicationSections: View {
         if let signal = module.modem.signalDBm {
             parts.append("\(signal) dBm")
         }
-        return parts.joined(separator: " · ")
+        return parts.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.joined(separator: " · ")
     }
 
     private var animationKeys: [String] {

@@ -75,7 +75,7 @@ struct PhoneSidebarView: View {
 
                 Text(verbatim: [moduleName(record), record.startedAt.formatted(.dateTime.month().day().hour().minute())]
                     .compactMap { $0 }
-                    .joined(separator: " · "))
+                    .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.joined(separator: " · "))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)

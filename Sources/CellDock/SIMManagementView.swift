@@ -367,7 +367,7 @@ struct SIMManagementView: View {
             .foregroundStyle(mode.isEnabled ? Color.accentColor : Color.secondary)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(verbatim: "\(module.displayName) · \(module.carrierName)")
+                Text(verbatim: "\(module.carrierName)")
                     .font(.callout.weight(.semibold))
                     .lineLimit(1)
                 if let issue = appState.networkStatus(for: module.id).issue, issue.isWarning {
@@ -407,7 +407,7 @@ struct SIMManagementView: View {
         if let technology = module.technologyName { parts.append(technology) }
         if let signal = module.modem.signalDBm { parts.append("\(signal) dBm") }
         if !module.isDataEligible { parts.append(module.statusText) }
-        return parts.isEmpty ? L10n.tr("正在读取网络状态") : parts.joined(separator: " · ")
+        return parts.isEmpty ? L10n.tr("正在读取网络状态") : parts.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.joined(separator: " · ")
     }
 
     private var internetGlobeColor: Color {
@@ -425,7 +425,7 @@ struct SIMManagementView: View {
     private var moduleDetailHeader: some View {
         HStack(alignment: .center, spacing: 14) {
             VStack(alignment: .leading, spacing: 5) {
-                Text(L10n.tr("%@ · %@", selectedModule?.displayName ?? L10n.tr("模组"), selectedModule?.carrierName ?? L10n.tr("运营商未识别")))
+                Text(selectedModule?.carrierName ?? L10n.tr("运营商未识别"))
                     .font(.title2.weight(.bold))
                     .lineLimit(1)
 
@@ -567,7 +567,7 @@ struct SIMManagementView: View {
         var parts = [module.statusText]
         if let technology = module.technologyName { parts.append(technology) }
         if let signal = module.modem.signalDBm { parts.append("\(signal) dBm") }
-        return parts.joined(separator: " · ")
+        return parts.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.joined(separator: " · ")
     }
 
     private func reconcileModuleSelection() {
@@ -1136,7 +1136,7 @@ struct SIMManagementView: View {
     private var overviewConnectionDetail: String {
         [selectedModule?.technologyName, selectedNetwork.ipv4Address]
             .compactMap { $0 }
-            .joined(separator: " · ")
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.joined(separator: " · ")
     }
 
     private var messageServiceColor: Color {
@@ -1625,7 +1625,7 @@ struct SIMManagementView: View {
         case .ready:
             let parts = [selectedModem.accessTechnology, selectedModem.signalDBm.map { "\($0) dBm" }]
                 .compactMap { $0 }
-            return parts.isEmpty ? L10n.tr("正在读取蜂窝网络状态") : parts.joined(separator: " · ")
+            return parts.isEmpty ? L10n.tr("正在读取蜂窝网络状态") : parts.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.joined(separator: " · ")
         case .queryFailed:
             return selectedModem.simLastError ?? L10n.tr("稍后将自动重新查询")
         case .pinRequired:
@@ -1656,7 +1656,7 @@ struct SIMManagementView: View {
         }
         parts.append(L10n.tr("信号 %lld dBm", Int64(signalDBm)))
         parts.append(L10n.tr("信号强度 %lld 格", Int64(selectedModem.signalBars)))
-        return parts.joined(separator: " · ")
+        return parts.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.joined(separator: " · ")
     }
 
     private var networkStateText: String {
@@ -1830,7 +1830,7 @@ private struct SIMModuleSidebarRow: View {
     private var moduleTitle: String {
         [module.localizedDisplayName, module.carrierName, module.technologyName]
             .compactMap { $0 }
-            .joined(separator: " · ")
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.joined(separator: " · ")
     }
 
     private var hasRoleTags: Bool {

@@ -188,7 +188,7 @@ struct CellularOverviewCard: View {
     @ViewBuilder
     private var cardTitleView: some View {
         if let displayedModule {
-            Text("\(displayedModule.displayName) · \(operatorName)")
+            Text("\(operatorName)")
                 .font(.headline)
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
@@ -462,7 +462,7 @@ struct CellularOverviewCard: View {
             displayedModem.accessTechnology,
             displayedModem.signalDBm.map { "\($0) dBm" }
         ].compactMap { $0 }
-        if !parts.isEmpty { return parts.joined(separator: " · ") }
+        if !parts.isEmpty { return parts.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.joined(separator: " · ") }
         return displayedModem.operationalState == .configurationRequired
             ? L10n.tr("需要完成模组配置")
             : L10n.tr("正在读取信号")

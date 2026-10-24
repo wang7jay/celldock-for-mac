@@ -143,8 +143,7 @@ cp "$ROOT/Resources/sim1.svg" "$STAGE_APP/Contents/Resources/sim1.svg"
 cp "$ROOT/Resources/celldock-module-vertical.svg" "$STAGE_APP/Contents/Resources/celldock-module-vertical.svg"
 cp -R "$ROOT/Resources/Localization/"*.lproj "$STAGE_APP/Contents/Resources/"
 mkdir -p "$STAGE_APP/Contents/Resources/Sounds"
-cp "$ROOT/Resources/Sounds/bleeps.wav" "$STAGE_APP/Contents/Resources/Sounds/bleeps.wav"
-cp "$ROOT/Resources/Sounds/ring.mp3" "$STAGE_APP/Contents/Resources/Sounds/ring.mp3"
+cp "$ROOT/Resources/Sounds/"* "$STAGE_APP/Contents/Resources/Sounds/"
 if [[ -d "$ROOT/Resources/ModuleVoice" ]]; then
   xcrun swift "$ROOT/scripts/build_module_voice_payload.swift" \
     "$ROOT/Resources/ModuleVoice" \
@@ -228,6 +227,7 @@ codesign \
   --sign "$SIGN_IDENTITY" \
   "${CODESIGN_OPTIONS[@]}" \
   "${APP_REQUIREMENT_OPTIONS[@]}" \
+  --entitlements "$ROOT/Resources/CellDock.entitlements" \
   --identifier app.celldock.mac \
   "$STAGE_APP"
 codesign --verify --deep --strict --verbose=2 "$STAGE_APP"

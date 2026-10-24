@@ -326,7 +326,7 @@ final class AppState: ObservableObject {
             return [
                 CellularModuleSummary(
                     id: id,
-                    displayName: L10n.tr("模组 %lld", Int64(1)),
+                    displayName: "",
                     modem: modem,
                     network: network,
                     cardKind: euicc.cardKind,
@@ -354,7 +354,7 @@ final class AppState: ObservableObject {
                 : (auxiliaryEUICCSnapshots[device.locationID]?.cardKind ?? .unknown)
             return CellularModuleSummary(
                 id: device.moduleID,
-                displayName: L10n.tr("模组 %lld", Int64(index + 1)),
+                displayName: "",
                 modem: moduleSnapshot,
                 network: networkStatus(for: device.moduleID),
                 cardKind: cardKind,

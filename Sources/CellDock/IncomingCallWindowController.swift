@@ -533,7 +533,7 @@ private struct CallIslandView: View {
         ]
         .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
         .filter { !$0.isEmpty }
-        .joined(separator: " · ")
+        .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.joined(separator: " · ")
     }
 
     private var avatarTint: Color {
